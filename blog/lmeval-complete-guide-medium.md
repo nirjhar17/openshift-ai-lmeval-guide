@@ -107,15 +107,38 @@ A **Task** defines what type of evaluation this is:
 
 ### 4. Pre-built vs Custom
 
-**Pre-built:**
-- Ready-to-use benchmarks
-- Use `taskNames: arc_easy`
-- Covers most use cases
+When defining what tests to run, we have two options:
 
-**Custom:**
-- Define our own evaluation
-- Write card + template JSON
-- For specialized needs
+**Pre-built Tasks**
+
+These are ready-to-use benchmarks that come built into LM-Eval. Someone has already defined the card, template, and task - we just reference them by name.
+
+```yaml
+taskList:
+  taskNames:
+    - arc_easy      # Science questions
+    - mmlu          # 57 academic subjects
+    - gsm8k         # Math problems
+```
+
+Use when:
+- We want standard benchmarks to compare against other models
+- Quick testing without configuration
+- Covers most evaluation needs
+
+**Custom Tasks (Unitxt)**
+
+When pre-built tasks don't fit our needs, we define our own using Unitxt. We write the card (data source) and template (prompt format) ourselves.
+
+```yaml
+taskList:
+  taskRecipes:
+    - card:
+        custom: |
+          { ... our data definition ... }
+      template:
+        name: "templates.classification.multi_class.relation.default"
+```
 
 ### 5. Model Connection Methods
 
