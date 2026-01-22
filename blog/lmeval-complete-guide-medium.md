@@ -91,6 +91,8 @@ A **Task** defines what type of evaluation this is:
 - Question Answering (generate an answer)
 - Summarization (condense text)
 
+**How are these evaluated?** Tasks with fixed answer choices (like Classification) use **Loglikelihood** - the model calculates probability for each option. Tasks requiring free-form answers (like Summarization) use **Generation** - the model writes its own response.
+
 #### Two Types of Evaluation Methods
 
 **Loglikelihood Tasks**
