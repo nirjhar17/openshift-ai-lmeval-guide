@@ -1,0 +1,11 @@
+# Phase 1: Create namespace for LM-Eval testing
+# Command: oc apply -f namespace.yaml
+# Or simply: oc new-project lmeval-testing
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lmeval-testing
+  labels:
+    purpose: lmeval-testing
+    opendatahub.io/dashboard: "true"

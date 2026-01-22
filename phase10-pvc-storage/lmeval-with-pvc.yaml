@@ -1,0 +1,25 @@
+apiVersion: trustyai.opendatahub.io/v1alpha1
+kind: LMEvalJob
+metadata:
+  name: pvc-storage-eval
+  namespace: lmeval-testing
+spec:
+  allowOnline: true
+  allowCodeExecution: true
+  
+  model: hf
+  modelArgs:
+    - name: pretrained
+      value: google/flan-t5-small
+  
+  taskList:
+    taskNames:
+      - arc_easy
+  
+  limit: "5"
+  batchSize: "1"
+  logSamples: true
+  
+  # OUTPUT TO EXISTING PVC (persists after job completes!)
+  outputs:
+    pvcName: "lmeval-results-pvc"

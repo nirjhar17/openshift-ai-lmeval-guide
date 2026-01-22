@@ -1,0 +1,35 @@
+apiVersion: trustyai.opendatahub.io/v1alpha1
+kind: LMEvalJob
+metadata:
+  name: openai-completions-eval
+  namespace: lmeval-testing
+spec:
+  allowOnline: true
+  allowCodeExecution: true
+
+  # Model - OpenAI Completions API
+  model: openai-completions
+  
+  modelArgs:
+    # davinci-002 supports loglikelihood (gpt-3.5-turbo-instruct does NOT)
+    - name: model
+      value: "davinci-002"
+
+  # Task - Loglikelihood task (works with davinci-002)
+  taskList:
+    taskNames:
+      - arc_easy
+
+  limit: "5"
+  batchSize: "1"
+  logSamples: true
+
+  # Pod config with OpenAI API key from secret
+  pod:
+    container:
+      env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-api-secret
+              key: OPENAI_API_KEY

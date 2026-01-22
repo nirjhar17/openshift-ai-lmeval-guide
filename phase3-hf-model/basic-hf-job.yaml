@@ -1,0 +1,26 @@
+apiVersion: trustyai.opendatahub.io/v1alpha1
+kind: LMEvalJob
+metadata:
+  name: hf-basic-eval
+  namespace: lmeval-testing
+spec:
+  # Security - Allow internet to download model & dataset
+  allowOnline: true
+  allowCodeExecution: true
+  
+  # Model - Download from HuggingFace
+  model: hf
+  modelArgs:
+    - name: pretrained
+      value: google/flan-t5-small    # Small model for quick test
+  
+  # Task - Simple evaluation
+  taskList:
+    taskRecipes:
+      - card:
+          name: "cards.wnli"
+        template:
+          name: "templates.classification.multi_class.relation.default"
+  
+  # Logging
+  logSamples: true

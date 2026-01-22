@@ -1,0 +1,39 @@
+apiVersion: trustyai.opendatahub.io/v1alpha1
+kind: LMEvalJob
+metadata:
+  name: openai-chat-eval
+  namespace: lmeval-testing
+spec:
+  allowOnline: true
+  allowCodeExecution: true
+
+  # Model - OpenAI Chat Completions API
+  model: openai-chat-completions
+  
+  modelArgs:
+    - name: model
+      value: "gpt-3.5-turbo"
+
+  # Enable chat template (REQUIRED for chat completions)
+  chatTemplate:
+    enabled: true
+
+  # GENERATION tasks only (no loglikelihood)
+  taskList:
+    taskNames:
+      - gsm8k
+      - truthfulqa_gen
+
+  limit: "5"
+  batchSize: "1"
+  logSamples: true
+
+  # Pod config with OpenAI API key
+  pod:
+    container:
+      env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-api-secret
+              key: OPENAI_API_KEY

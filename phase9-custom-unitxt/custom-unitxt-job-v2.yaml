@@ -1,0 +1,60 @@
+apiVersion: trustyai.opendatahub.io/v1alpha1
+kind: LMEvalJob
+metadata:
+  name: custom-unitxt-eval-v2
+  namespace: lmeval-testing
+spec:
+  allowOnline: true
+  allowCodeExecution: true
+  
+  model: hf
+  modelArgs:
+    - name: pretrained
+      value: google/flan-t5-small
+  
+  taskList:
+    taskRecipes:
+      - template:
+          name: "templates.classification.multi_class.relation.default"
+        card:
+          custom: |
+            {
+              "__type__": "task_card",
+              "loader": {
+                "__type__": "load_hf",
+                "path": "glue",
+                "name": "wnli"
+              },
+              "preprocess_steps": [
+                {
+                  "__type__": "rename",
+                  "field": "sentence1",
+                  "to_field": "premise"
+                },
+                {
+                  "__type__": "rename",
+                  "field": "sentence2",
+                  "to_field": "hypothesis"
+                },
+                {
+                  "__type__": "map_instance_values",
+                  "mappers": {
+                    "label": {
+                      "0": "no",
+                      "1": "yes"
+                    }
+                  }
+                },
+                {
+                  "__type__": "set",
+                  "fields": {
+                    "classes": ["yes", "no"]
+                  }
+                }
+              ],
+              "task": "tasks.classification.multi_class.relation"
+            }
+  
+  logSamples: true
+  limit: "10"
+  batchSize: "1"

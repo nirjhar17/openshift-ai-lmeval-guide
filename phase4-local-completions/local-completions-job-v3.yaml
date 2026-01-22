@@ -1,0 +1,37 @@
+apiVersion: trustyai.opendatahub.io/v1alpha1
+kind: LMEvalJob
+metadata:
+  name: local-model-eval-v3
+  namespace: lmeval-testing
+spec:
+  # Security
+  allowOnline: true
+  allowCodeExecution: true
+  
+  # Model - Use internal EPP service (no SSL)
+  model: local-completions
+  modelArgs:
+    - name: model
+      value: qwen3-0-6b
+    - name: base_url
+      value: "http://qwen3-0-6b-epp-service.my-first-model.svc.cluster.local:9002/v1/completions"
+    - name: tokenizer
+      value: Qwen/Qwen2.5-0.5B
+    - name: num_concurrent
+      value: "1"
+    - name: max_retries
+      value: "3"
+    - name: tokenized_requests
+      value: "False"
+  
+  # Task - Simple evaluation
+  taskList:
+    taskNames:
+      - arc_easy
+  
+  # Limit samples for quick test
+  limit: "10"
+  
+  # Logging
+  logSamples: true
+  batchSize: "1"

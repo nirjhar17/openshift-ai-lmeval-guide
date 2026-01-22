@@ -1,0 +1,57 @@
+apiVersion: trustyai.opendatahub.io/v1alpha1
+kind: LMEvalJob
+metadata:
+  name: local-model-eval-v5
+  namespace: lmeval-testing
+spec:
+  # Security
+  allowOnline: true
+  allowCodeExecution: true
+  
+  # Model - Use workload service with HTTPS
+  model: local-completions
+  modelArgs:
+    - name: model
+      value: "Qwen/Qwen3-0.6B"
+    - name: base_url
+      value: "https://qwen3-0-6b-kserve-workload-svc.my-first-model.svc.cluster.local:8000/v1/completions"
+    - name: tokenizer
+      value: Qwen/Qwen2.5-0.5B
+    - name: num_concurrent
+      value: "1"
+    - name: max_retries
+      value: "3"
+    - name: tokenized_requests
+      value: "False"
+  
+  # Task - Simple evaluation
+  taskList:
+    taskNames:
+      - arc_easy
+  
+  # Limit samples for quick test
+  limit: "10"
+  
+  # Logging
+  logSamples: true
+  batchSize: "1"
+  
+  # Pod config - Mount service CA and set SSL cert path
+  pod:
+    container:
+      env:
+        - name: REQUESTS_CA_BUNDLE
+          value: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
+        - name: SSL_CERT_FILE
+          value: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
+      volumeMounts:
+        - name: service-ca
+          mountPath: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+          subPath: service-ca.crt
+    volumes:
+      - name: service-ca
+        configMap:
+          name: openshift-service-ca.crt
+          items:
+            - key: service-ca.crt
+              path: service-ca.crt
