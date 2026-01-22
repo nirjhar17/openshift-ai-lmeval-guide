@@ -49,9 +49,9 @@ LM-Eval is built on two powerful open-source projects:
 
 ## Understanding the Key Concepts
 
-### The Four Key Concepts
+Before diving into hands-on examples, let's understand the core concepts that power LM-Eval.
 
-#### 1. Card (Data Source & Preparation)
+### 1. Card (Data Source & Preparation)
 
 A **Card** defines where the data comes from and how to prepare it for evaluation.
 
@@ -67,7 +67,7 @@ Raw Dataset (HuggingFace)          After Card Processing
 Card renamed fields and converted label from number to text.
 ```
 
-#### 2. Template (Prompt Formatting)
+### 2. Template (Prompt Formatting)
 
 A **Template** defines how to present the question to the model.
 
@@ -84,14 +84,28 @@ Data After Card              After Template
 Template formatted the data into a prompt the model can understand.
 ```
 
-#### 3. Task (Evaluation Type)
+### 3. Task (Evaluation Type)
 
 A **Task** defines what type of evaluation this is:
 - Classification (pick one answer from choices)
 - Question Answering (generate an answer)
 - Summarization (condense text)
 
-#### 4. Pre-built vs Custom
+#### Two Types of Evaluation Methods
+
+**Loglikelihood Tasks**
+- How It Works: Model calculates probability of each answer option
+- Example Tasks: arc_easy, mmlu, hellaswag, winogrande
+- Best For: Multiple choice questions
+
+**Generation Tasks**
+- How It Works: Model writes free-form text answer
+- Example Tasks: gsm8k, truthfulqa_gen, drop
+- Best For: Open-ended questions, math problems
+
+**Why does this matter?** Not all model connection methods support both task types. Chat APIs cannot calculate loglikelihood, so they only work with generation tasks.
+
+### 4. Pre-built vs Custom
 
 **Pre-built:**
 - Ready-to-use benchmarks
@@ -102,6 +116,49 @@ A **Task** defines what type of evaluation this is:
 - Define our own evaluation
 - Write card + template JSON
 - For specialized needs
+
+### 5. Model Connection Methods
+
+This defines HOW we connect to the model we want to evaluate:
+
+**hf (HuggingFace)**
+- Downloads model weights at runtime
+- Use for: Testing open-source models
+- Supports: All task types (loglikelihood + generation)
+
+**local-completions**
+- Connects to our deployed model's completion API
+- Use for: Models running on OpenShift (vLLM, KServe)
+- Supports: All task types (loglikelihood + generation)
+
+**local-chat-completions**
+- Connects to our deployed model's chat API
+- Use for: Chat-optimized models on OpenShift
+- Supports: Generation tasks only (NOT loglikelihood)
+
+**openai-completions**
+- Connects to OpenAI's legacy completion API
+- Use for: davinci-002, babbage-002
+- Supports: Limited loglikelihood + generation
+
+**openai-chat-completions**
+- Connects to OpenAI's chat API
+- Use for: gpt-3.5-turbo, gpt-4
+- Supports: Generation tasks only (NOT loglikelihood)
+
+**Quick Reference - What works with what:**
+
+**hf:** ✅ Loglikelihood, ✅ Generation
+
+**local-completions:** ✅ Loglikelihood, ✅ Generation
+
+**local-chat-completions:** ❌ Loglikelihood, ✅ Generation
+
+**openai-completions:** ⚠️ Limited Loglikelihood (only davinci-002/babbage-002), ✅ Generation
+
+**openai-chat-completions:** ❌ Loglikelihood, ✅ Generation
+
+**Recommendation:** Use `hf` or `local-completions` for maximum flexibility with all task types.
 
 ### How They All Connect
 
@@ -222,6 +279,8 @@ oc create secret generic hf-token-secret \
 
 ## Part 2: First Evaluation (HuggingFace Model)
 
+Let's start with the simplest case - downloading a model from HuggingFace and evaluating it.
+
 ### What Happens When We Run an Evaluation?
 
 ```
@@ -308,39 +367,7 @@ oc get lmevaljob my-first-eval -o jsonpath='{.status.results}' | jq '.results'
 
 ---
 
-## Part 3: Model Types
-
-### The Five Model Types
-
-**hf**
-- When to Use: Download model from HuggingFace
-- Example: Testing open-source models
-
-**local-completions**
-- When to Use: Our deployed model (completion API)
-- Example: vLLM, KServe models
-
-**local-chat-completions**
-- When to Use: Our deployed model (chat API)
-- Example: Chat-optimized models
-
-**openai-completions**
-- When to Use: OpenAI API (legacy)
-- Example: davinci-002, babbage-002
-
-**openai-chat-completions**
-- When to Use: OpenAI API (chat)
-- Example: gpt-3.5-turbo, gpt-4
-
-### Completions vs Chat-Completions
-
-**Completions API** (`/v1/completions`): Takes a text prompt and continues it. Supports both loglikelihood-based tasks (multiple choice) and generation tasks.
-
-**Chat-Completions API** (`/v1/chat/completions`): Takes a conversation with roles (system, user, assistant). Only supports generation tasks - cannot calculate loglikelihood for multiple choice questions.
-
----
-
-## Part 4: Testing a Deployed Model
+## Part 3: Testing a Deployed Model
 
 We've deployed a **Qwen3-0.6B** model on our OpenShift cluster using KServe/vLLM. Now let's evaluate it to see how well it performs on standardized benchmarks. Unlike HuggingFace models that get downloaded during evaluation, this model is already running as a service - we just need to point the evaluation job to its API endpoint.
 
@@ -440,63 +467,7 @@ spec:
 
 ---
 
-## Part 5: Understanding Task Types
-
-### Two Types of Evaluation Tasks
-
-**Loglikelihood Tasks**
-- How It Works: Model calculates probability of each answer option
-- Example Tasks: arc_easy, mmlu, hellaswag
-
-**Generation Tasks**
-- How It Works: Model writes free-form text answer
-- Example Tasks: gsm8k, truthfulqa_gen
-
-### Model Type and Task Compatibility
-
-**hf**
-- Loglikelihood Tasks: ✅ Supported
-- Generation Tasks: ✅ Supported
-- Notes: Full support for all task types
-
-**local-completions**
-- Loglikelihood Tasks: ✅ Supported
-- Generation Tasks: ✅ Supported
-- Notes: Full support for all task types
-
-**local-chat-completions**
-- Loglikelihood Tasks: ❌ Not Supported
-- Generation Tasks: ✅ Supported
-- Notes: Chat API cannot return token probabilities
-
-**openai-completions**
-- Loglikelihood Tasks: ⚠️ Limited (only davinci-002 and babbage-002)
-- Generation Tasks: ✅ Supported
-
-**openai-chat-completions**
-- Loglikelihood Tasks: ❌ Not Supported
-- Generation Tasks: ✅ Supported
-- Notes: Chat API cannot return token probabilities
-
-**Recommendation:** Use `local-completions` or `hf` for maximum flexibility with all task types.
-
-### Popular Tasks Reference
-
-**Loglikelihood Tasks:**
-- `arc_easy` - Grade-school science (easy)
-- `arc_challenge` - Grade-school science (hard)
-- `mmlu` - 57 subjects from elementary to professional
-- `hellaswag` - Common sense reasoning
-- `winogrande` - Pronoun resolution
-
-**Generation Tasks:**
-- `gsm8k` - Grade school math
-- `truthfulqa_gen` - Truthfulness evaluation
-- `drop` - Reading comprehension
-
----
-
-## Part 6: Testing with OpenAI
+## Part 4: Testing with OpenAI
 
 ### Create the OpenAI Secret
 
@@ -577,7 +548,7 @@ spec:
 
 ---
 
-## Part 7: Custom Evaluations
+## Part 5: Custom Evaluations
 
 When pre-built tasks don't fit our needs, we can create custom ones.
 
@@ -709,27 +680,27 @@ Here's what we achieved across our tests:
 - Task: wnli
 - Score: 56% accuracy
 
-**Part 4: Qwen3-0.6B (local)**
+**Part 3: Qwen3-0.6B (local-completions)**
 - Task: arc_easy
 - Score: 60% accuracy
 
-**Part 4: Qwen3-0.6B (chat)**
+**Part 3: Qwen3-0.6B (local-chat-completions)**
 - Task: gsm8k
 - Score: 20% exact match
 
-**Part 6: davinci-002 (OpenAI)**
+**Part 4: davinci-002 (OpenAI completions)**
 - Task: arc_easy
 - Score: 40% accuracy
 
-**Part 6: gpt-3.5-turbo (OpenAI)**
+**Part 4: gpt-3.5-turbo (OpenAI chat)**
 - Task: gsm8k
 - Score: 80% exact match
 
-**Part 7: flan-t5-base (HF)**
+**Part 5: flan-t5-base (HF)**
 - Task: pre-built wnli
 - Score: 60% accuracy
 
-**Part 7: Qwen3-0.6B (local)**
+**Part 5: Qwen3-0.6B (local-completions)**
 - Task: custom wnli
 - Score: 50% accuracy / 67% F1
 
@@ -740,7 +711,7 @@ Here's what we achieved across our tests:
 
 ---
 
-## Part 8: Dashboard UI
+## Part 6: Dashboard UI
 
 OpenShift AI provides a visual interface for running evaluations.
 
