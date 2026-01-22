@@ -123,6 +123,8 @@ A **Task** defines what type of evaluation this is:
 
 OpenShift AI has a two-level security system for evaluation jobs.
 
+**Why does this matter?** LM-Eval jobs need internet access to download models from HuggingFace and datasets for evaluation. By default, this is disabled for security. To run evaluations, we must enable internet access at both levels - the admin must allow it globally, and each job must request it.
+
 **Level 1: Global (Admin Controls)** - Defines what users CAN request
 
 ```yaml
@@ -319,7 +321,7 @@ oc get lmevaljob my-first-eval -o jsonpath='{.status.results}' | jq '.results'
 
 ## Part 4: Testing a Deployed Model
 
-If we have a model running on OpenShift (via KServe/vLLM), here's how to test it.
+We've deployed a **Qwen3-0.6B** model on our OpenShift cluster using KServe/vLLM. Now let's evaluate it to see how well it performs on standardized benchmarks. Unlike HuggingFace models that get downloaded during evaluation, this model is already running as a service - we just need to point the evaluation job to its API endpoint.
 
 ### Finding Our Model's URL
 
@@ -331,7 +333,9 @@ oc get svc -n openshift-ingress | grep openshift-ai-inference
 # http://<gateway-svc>.<namespace>.svc.cluster.local:80/<model-ns>/<model-name>/v1/completions
 ```
 
-### The YAML
+### Testing with Completions API
+
+Use this for loglikelihood tasks (multiple choice) and generation tasks:
 
 ```yaml
 apiVersion: trustyai.opendatahub.io/v1alpha1
@@ -366,6 +370,52 @@ spec:
   batchSize: "1"
   logSamples: true
 ```
+
+### Testing with Chat-Completions API
+
+If our model is optimized for chat, we can use the chat-completions endpoint. Note: This only works with generation tasks (like gsm8k), not loglikelihood tasks (like arc_easy).
+
+```yaml
+apiVersion: trustyai.opendatahub.io/v1alpha1
+kind: LMEvalJob
+metadata:
+  name: local-chat-eval
+  namespace: lmeval-testing
+spec:
+  allowOnline: true
+  allowCodeExecution: true
+  
+  model: local-chat-completions
+  modelArgs:
+    - name: model
+      value: "Qwen/Qwen3-0.6B"
+    - name: base_url
+      value: "http://openshift-ai-inference-openshift-ai-inference.openshift-ingress.svc.cluster.local:80/my-first-model/qwen3-0-6b/v1/chat/completions"
+    - name: tokenizer
+      value: Qwen/Qwen2.5-0.5B
+    - name: num_concurrent
+      value: "1"
+    - name: max_retries
+      value: "3"
+    - name: tokenized_requests
+      value: "False"
+  chatTemplate:
+    enabled: true    # Required for chat models
+  
+  taskList:
+    taskNames:
+      - gsm8k        # Generation task (math problems)
+  
+  limit: "10"
+  batchSize: "1"
+  logSamples: true
+```
+
+**Key differences:**
+- `model: local-chat-completions` instead of `local-completions`
+- URL ends with `/v1/chat/completions` instead of `/v1/completions`
+- `chatTemplate: enabled: true` is required
+- Only generation tasks work (gsm8k, truthfulqa_gen) - not multiple choice tasks
 
 ---
 
