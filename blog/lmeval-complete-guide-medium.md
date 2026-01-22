@@ -149,27 +149,27 @@ This defines HOW we connect to the model we want to evaluate:
 **hf (HuggingFace)**
 - Downloads model weights at runtime
 - Use for: Testing open-source models
-- Supports: All task types (loglikelihood + generation)
+- API supports: Loglikelihood + Generation (actual support depends on model architecture)
 
 **local-completions**
 - Connects to our deployed model's completion API
 - Use for: Models running on OpenShift (vLLM, KServe)
-- Supports: All task types (loglikelihood + generation)
+- API supports: Loglikelihood + Generation (actual support depends on model)
 
 **local-chat-completions**
 - Connects to our deployed model's chat API
 - Use for: Chat-optimized models on OpenShift
-- Supports: Generation tasks only (NOT loglikelihood)
+- API supports: Generation only (Chat API cannot calculate loglikelihood)
 
 **openai-completions**
 - Connects to OpenAI's legacy completion API
 - Use for: davinci-002, babbage-002
-- Supports: Limited loglikelihood + generation
+- API supports: Loglikelihood only for davinci-002/babbage-002, Generation for all
 
 **openai-chat-completions**
 - Connects to OpenAI's chat API
 - Use for: gpt-3.5-turbo, gpt-4
-- Supports: Generation tasks only (NOT loglikelihood)
+- API supports: Generation only (Chat API cannot calculate loglikelihood)
 
 **Quick Reference - What works with what:**
 
@@ -246,6 +246,18 @@ spec:
 - Global `permitOnline: allow` + Per-Job `allowOnline: true` → ✅ Works
 - Global `permitOnline: allow` + Per-Job `allowOnline: false` → ❌ No internet
 - Global `permitOnline: deny` + Per-Job `allowOnline: true` → ❌ Blocked by admin
+
+---
+
+## Hands-On Guide
+
+Now that we understand the concepts, let's put them into practice.
+
+```
+Setup → Test HF Model → Test Deployed Model → Test OpenAI → Custom Evaluation → Dashboard
+```
+
+We'll start by enabling LM-Eval on our cluster, then progressively test different model sources - from HuggingFace downloads, to locally deployed models, to OpenAI APIs. Finally, we'll create a custom evaluation for specialized needs.
 
 ---
 

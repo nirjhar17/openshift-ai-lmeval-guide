@@ -134,13 +134,13 @@ taskList:
 
 This defines HOW we connect to the model we want to evaluate:
 
-| Method | Description | Supports |
-|--------|-------------|----------|
-| `hf` | Downloads model weights from HuggingFace | ✅ Loglikelihood, ✅ Generation |
-| `local-completions` | Connects to deployed model's completion API | ✅ Loglikelihood, ✅ Generation |
-| `local-chat-completions` | Connects to deployed model's chat API | ❌ Loglikelihood, ✅ Generation |
-| `openai-completions` | OpenAI's legacy API (davinci-002, babbage-002) | ⚠️ Limited Loglikelihood, ✅ Generation |
-| `openai-chat-completions` | OpenAI's chat API (gpt-3.5-turbo, gpt-4) | ❌ Loglikelihood, ✅ Generation |
+| Method | Description | API Supports |
+|--------|-------------|--------------|
+| `hf` | Downloads model weights from HuggingFace | Loglikelihood + Generation (depends on model) |
+| `local-completions` | Connects to deployed model's completion API | Loglikelihood + Generation (depends on model) |
+| `local-chat-completions` | Connects to deployed model's chat API | Generation only (Chat API limitation) |
+| `openai-completions` | OpenAI's legacy API (davinci-002, babbage-002) | Loglikelihood only for davinci-002/babbage-002 |
+| `openai-chat-completions` | OpenAI's chat API (gpt-3.5-turbo, gpt-4) | Generation only (Chat API limitation) |
 
 **Recommendation:** Use `hf` or `local-completions` for maximum flexibility with all task types.
 
@@ -206,6 +206,18 @@ spec:
 | `permitOnline: allow` | `allowOnline: true` | ✅ Works |
 | `permitOnline: allow` | `allowOnline: false` | ❌ No internet |
 | `permitOnline: deny` | `allowOnline: true` | ❌ Blocked by admin |
+
+---
+
+## Hands-On Guide
+
+Now that we understand the concepts, let's put them into practice.
+
+```
+Setup → Test HF Model → Test Deployed Model → Test OpenAI → Custom Evaluation → Dashboard
+```
+
+We'll start by enabling LM-Eval on our cluster, then progressively test different model sources - from HuggingFace downloads, to locally deployed models, to OpenAI APIs. Finally, we'll create a custom evaluation for specialized needs.
 
 ---
 
